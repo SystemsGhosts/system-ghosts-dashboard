@@ -1,17 +1,19 @@
 "use client";
 import { useEffect, useState } from "react";
-import type { IgPost, CrmLead, ManychatLead, SheetData } from "@/lib/sheets";
+import type { IgPost, SheetData } from "@/lib/sheets";
 import {
   C,
   serif,
   sans,
   pct,
   fmt,
+  fmtShortDate,
   comparisonWindows,
   sum,
   lastSevenPostsBars,
   topAndBottomPosts,
   salesMetrics,
+  topLeadSources,
 } from "@/lib/derive";
 
 const Pill = ({ children, inv = false, down = false }: { children: React.ReactNode; inv?: boolean; down?: boolean }) => (
@@ -71,15 +73,18 @@ const Header = ({ w1, w2, right }: { w1: string; w2: string; right: React.ReactN
 );
 
 const PostRow = ({ post, rank, showBorder }: { post: IgPost; rank: number; showBorder: boolean }) => {
-  const cap = post.shortCaption.length > 45 ? post.shortCaption.slice(0, 45) + "..." : post.shortCaption;
+  const cap = post.shortCaption.length > 42 ? post.shortCaption.slice(0, 42) + "..." : post.shortCaption;
   const eng = post.views > 0 ? ((post.interactions / post.views) * 100).toFixed(1) : "—";
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "32px 40px 1fr 72px 72px 72px", gap: 8, alignItems: "center", padding: "12px 0", borderBottom: showBorder ? `1px solid ${C.hairline}` : "none" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "32px 1fr 72px 72px 64px 64px", gap: 8, alignItems: "center", padding: "12px 0", borderBottom: showBorder ? `1px solid ${C.hairline}` : "none" }}>
       <span style={{ fontFamily: serif, fontSize: 18, color: C.inkDim }}>{String(rank).padStart(2, "0")}</span>
-      <div style={{ width: 36, height: 36, borderRadius: 8, background: `repeating-linear-gradient(135deg,${C.surface2},${C.surface2} 3px,${C.hairline} 3px,${C.hairline} 6px)`, flexShrink: 0 }} />
       <div style={{ overflow: "hidden" }}>
         <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", color: C.accent }}>{post.type === "REELS" ? "REEL" : "CAROUSEL"}</div>
         <div style={{ fontSize: 12, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{cap}</div>
+      </div>
+      <div style={{ textAlign: "right" }}>
+        <div style={{ fontFamily: serif, fontSize: 14 }}>{fmtShortDate(post.date)}</div>
+        <div style={{ fontSize: 9, color: C.inkDim }}>DATE</div>
       </div>
       <div style={{ textAlign: "right" }}>
         <div style={{ fontFamily: serif, fontSize: 17 }}>{fmt(post.views)}</div>
@@ -116,6 +121,7 @@ export default function Dashboard({ data }: { data: SheetData }) {
   const { bars, total: weekTotal, max: weekMax } = lastSevenPostsBars(igPosts);
 
   const sales = salesMetrics(crmLeads, manychatLeads);
+  const leadSources = topLeadSources(manychatLeads, igPosts, 5);
   const isFirstMonth = win.prev.length === 0 && crmLeads.length <= 1 && manychatLeads.length <= 1;
   const monthProgress = (win.dayOfMonth / win.daysInMonth) * 100;
   const totalPaid = 0;
@@ -142,14 +148,14 @@ export default function Dashboard({ data }: { data: SheetData }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
         <Panel title="TOP 4 POSTS" sub="RANKED BY TOTAL INTERACTIONS">
-          <div style={{ display: "grid", gridTemplateColumns: "32px 40px 1fr 72px 72px 72px", gap: 8, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", color: C.inkDim, paddingBottom: 8, borderBottom: `1px solid ${C.hairline}` }}>
-            <span>#</span><span></span><span>POST</span><span style={{ textAlign: "right" }}>VIEWS</span><span style={{ textAlign: "right" }}>INT.</span><span style={{ textAlign: "right" }}>ENG.</span>
+          <div style={{ display: "grid", gridTemplateColumns: "32px 1fr 72px 72px 64px 64px", gap: 8, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", color: C.inkDim, paddingBottom: 8, borderBottom: `1px solid ${C.hairline}` }}>
+            <span>#</span><span>POST</span><span style={{ textAlign: "right" }}>DATE</span><span style={{ textAlign: "right" }}>VIEWS</span><span style={{ textAlign: "right" }}>INT.</span><span style={{ textAlign: "right" }}>ENG.</span>
           </div>
           {top.map((p, i) => <PostRow key={i} post={p} rank={i + 1} showBorder={i < top.length - 1} />)}
         </Panel>
         <Panel title="BOTTOM 4 POSTS" sub="LOWEST BY TOTAL INTERACTIONS">
-          <div style={{ display: "grid", gridTemplateColumns: "32px 40px 1fr 72px 72px 72px", gap: 8, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", color: C.inkDim, paddingBottom: 8, borderBottom: `1px solid ${C.hairline}` }}>
-            <span>#</span><span></span><span>POST</span><span style={{ textAlign: "right" }}>VIEWS</span><span style={{ textAlign: "right" }}>INT.</span><span style={{ textAlign: "right" }}>ENG.</span>
+          <div style={{ display: "grid", gridTemplateColumns: "32px 1fr 72px 72px 64px 64px", gap: 8, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", color: C.inkDim, paddingBottom: 8, borderBottom: `1px solid ${C.hairline}` }}>
+            <span>#</span><span>POST</span><span style={{ textAlign: "right" }}>DATE</span><span style={{ textAlign: "right" }}>VIEWS</span><span style={{ textAlign: "right" }}>INT.</span><span style={{ textAlign: "right" }}>ENG.</span>
           </div>
           {bottom.map((p, i) => <PostRow key={i} post={p} rank={totalRanked - bottom.length + i + 1} showBorder={i < bottom.length - 1} />)}
         </Panel>
@@ -202,6 +208,7 @@ export default function Dashboard({ data }: { data: SheetData }) {
         <KpiCard num={sales.bookedCalls} label={"CALLS\nBOOKED"} idx="02" pill={isFirstMonth ? "First month" : "vs prev month"} footnote={isFirstMonth ? "No prior data — CRM started" : "Discovery/strategy"} />
         <KpiCard num={sales.signedClients} label={"NEW\nCLIENTS"} idx="03" pill={isFirstMonth ? "First month" : "vs prev month"} footnote={isFirstMonth ? "First sales month" : "Signed & onboarded"} />
         <KpiCard num={totalPaid > 0 ? `£${totalPaid.toLocaleString()}` : "£0"} label={"SALES"} idx="04" pill={isFirstMonth ? "First month" : "vs prev month"} footnote={"Stripe not yet connected"} filled />
+        <KpiCard num={totalPaid > 0 ? `£${totalPaid.toLocaleString()}` : "£0"} label={"CASH\nCOLLECTED"} idx="05" pill={isFirstMonth ? "First month" : "vs prev month"} footnote={totalOutstanding > 0 ? `£${totalOutstanding.toLocaleString()} outstanding` : "Stripe pending"} />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 16 }}>
@@ -223,63 +230,43 @@ export default function Dashboard({ data }: { data: SheetData }) {
             </div>
           ))}
 
-          <div style={{ marginTop: 24, borderTop: `1px solid ${C.hairline}`, paddingTop: 20 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.12em", color: C.inkDim, marginBottom: 12 }}>CRM PIPELINE</div>
-            {crmLeads.map((l, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, background: C.surface2, borderRadius: 14, padding: "12px 16px", marginBottom: 8 }}>
-                <div style={{ width: 8, height: 8, borderRadius: 999, background: C.accent }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>{l.name}</div>
-                  <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", color: C.inkDim }}>{(l.status || "LEAD").toUpperCase()}{l.callDate ? ` · ${l.callDate}` : ""}</div>
-                </div>
-                <span style={{ fontSize: 11, fontWeight: 600, background: C.accentSoft, color: C.accent, padding: "4px 10px", borderRadius: 999 }}>{l.status || "Lead"}</span>
+        </Panel>
+
+        <Panel title="LEAD SOURCES" sub="WHICH POSTS DRIVE DMS">
+          {leadSources.length === 0 ? (
+            <div style={{ padding: "24px", background: C.surface2, borderRadius: 16, textAlign: "center" }}>
+              <div style={{ fontFamily: serif, fontSize: 20, color: C.inkDim }}>No leads yet</div>
+              <div style={{ fontSize: 12, color: C.inkDim, marginTop: 8 }}>ManyChat captures will appear here, grouped by post.</div>
+            </div>
+          ) : (
+            <>
+              <div style={{ display: "grid", gridTemplateColumns: "32px 1fr 56px 56px", gap: 8, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", color: C.inkDim, paddingBottom: 8, borderBottom: `1px solid ${C.hairline}` }}>
+                <span>#</span><span>SOURCE</span><span style={{ textAlign: "right" }}>LEADS</span><span style={{ textAlign: "right" }}>CLICKS</span>
               </div>
-            ))}
-            {manychatLeads.map((l, i) => (
-              <div key={`mc-${i}`} style={{ display: "flex", alignItems: "center", gap: 12, background: C.surface2, borderRadius: 14, padding: "12px 16px", marginBottom: 8 }}>
-                <div style={{ width: 8, height: 8, borderRadius: 999, background: C.inkDim }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>
-                    {l.name} {l.username && <span style={{ fontWeight: 400, color: C.inkDim }}>@{l.username}</span>}
+              {leadSources.map((src, i) => (
+                <div key={i} style={{ display: "grid", gridTemplateColumns: "32px 1fr 56px 56px", gap: 8, alignItems: "center", padding: "12px 0", borderBottom: i < leadSources.length - 1 ? `1px solid ${C.hairline}` : "none" }}>
+                  <span style={{ fontFamily: serif, fontSize: 18, color: C.inkDim }}>{String(i + 1).padStart(2, "0")}</span>
+                  <div style={{ overflow: "hidden" }}>
+                    <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", color: C.accent }}>
+                      {src.matchedPost ? `${src.matchedPost.type === "REELS" ? "REEL" : "CAROUSEL"} · ${fmtShortDate(src.matchedPost.date)}` : "MANYCHAT"}
+                    </div>
+                    <div style={{ fontSize: 12, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{src.source}</div>
                   </div>
-                  <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", color: C.inkDim }}>MANYCHAT · {l.source.toUpperCase()}</div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontFamily: serif, fontSize: 22 }}>{src.count}</div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontFamily: serif, fontSize: 22, color: src.clicks > 0 ? C.accent : C.inkDim }}>{src.clicks}</div>
+                  </div>
                 </div>
-                <span style={{ fontSize: 11, fontWeight: 600, background: l.clickedLink ? C.accentSoft : C.surface2, color: l.clickedLink ? C.accent : C.inkDim, padding: "4px 10px", borderRadius: 999 }}>{l.clickedLink ? "Clicked link" : "Lead"}</span>
-              </div>
-            ))}
-            {crmLeads.length === 0 && manychatLeads.length === 0 && (
-              <div style={{ fontSize: 12, color: C.inkDim, padding: "12px 0" }}>No leads yet — they'll show up here as soon as one comes in.</div>
-            )}
-          </div>
-        </Panel>
-
-        <Panel title="CASH COLLECTED" sub="STRIPE INVOICES THIS MONTH">
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-            <span style={{ fontFamily: serif, fontSize: 56 }}>£{totalPaid.toLocaleString()}</span>
-            <span style={{ fontSize: 14, color: C.inkDim }}>cleared</span>
-          </div>
-          <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.12em", color: C.inkDim, marginTop: 2 }}>£{totalOutstanding.toLocaleString()} OUTSTANDING</div>
-          <div style={{ marginTop: 24, padding: "24px", background: C.surface2, borderRadius: 16, textAlign: "center" }}>
-            <div style={{ fontFamily: serif, fontSize: 20, color: C.inkDim }}>No invoices yet</div>
-            <div style={{ fontSize: 12, color: C.inkDim, marginTop: 8 }}>Stripe connection coming later</div>
-          </div>
+              ))}
+            </>
+          )}
         </Panel>
       </div>
 
-      <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 48, paddingTop: 24, borderTop: `1px solid ${C.hairline}`, flexWrap: "wrap" }}>
-        {[
-          { l: "INSTAGRAM", ok: igPosts.length > 0 },
-          { l: "NOTION CRM", ok: crmLeads.length > 0 },
-          { l: "MANYCHAT", ok: manychatLeads.length > 0 },
-          { l: "STRIPE", ok: false },
-        ].map((s, i) => (
-          <span key={i} style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", padding: "4px 12px", borderRadius: 999, background: s.ok ? C.accentSoft : C.surface2, color: s.ok ? C.accent : C.inkDim }}>
-            {s.ok ? "●" : "○"} {s.l}
-          </span>
-        ))}
-      </div>
-      <div style={{ textAlign: "center", marginTop: 12, fontSize: 11, color: C.inkDim, letterSpacing: "0.1em" }}>
-        SYSTEM GHOSTS LTD · SALES & SOCIAL PULSE · LAST SYNCED {new Date(fetchedAt).toLocaleString("en-GB")}
+      <div style={{ textAlign: "center", marginTop: 48, paddingTop: 24, borderTop: `1px solid ${C.hairline}`, fontSize: 11, color: C.inkDim, letterSpacing: "0.1em" }}>
+        SYSTEM GHOSTS · SALES & SOCIAL PULSE · LAST REFRESHED {new Date(fetchedAt).toLocaleString("en-GB")}
       </div>
     </div>
   );

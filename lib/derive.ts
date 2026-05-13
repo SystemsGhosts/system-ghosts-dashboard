@@ -85,6 +85,45 @@ export type SalesMetrics = {
   signedClients: number;
 };
 
+export function fmtShortDate(iso: string): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const day = d.getDate();
+  const mon = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"][d.getMonth()];
+  return `${day} ${mon}`;
+}
+
+export type LeadSource = {
+  source: string;
+  count: number;
+  clicks: number;
+  matchedPost?: IgPost;
+};
+
+function extractDayNum(s: string): number | null {
+  const m = s.match(/day\s*(\d+)/i);
+  return m ? parseInt(m[1], 10) : null;
+}
+
+export function topLeadSources(manychat: ManychatLead[], posts: IgPost[], limit = 5): LeadSource[] {
+  const grouped = new Map<string, { count: number; clicks: number }>();
+  for (const l of manychat) {
+    const key = l.source || "(unknown)";
+    const cur = grouped.get(key) ?? { count: 0, clicks: 0 };
+    cur.count += 1;
+    if (l.clickedLink) cur.clicks += 1;
+    grouped.set(key, cur);
+  }
+  const sources: LeadSource[] = [];
+  for (const [source, { count, clicks }] of grouped.entries()) {
+    const dayNum = extractDayNum(source);
+    const matchedPost = dayNum != null ? posts.find((p) => extractDayNum(p.caption) === dayNum) : undefined;
+    sources.push({ source, count, clicks, matchedPost });
+  }
+  return sources.sort((a, b) => b.count - a.count).slice(0, limit);
+}
+
 export function salesMetrics(crm: CrmLead[], manychat: ManychatLead[]): SalesMetrics {
   return {
     totalLeads: manychat.length,
