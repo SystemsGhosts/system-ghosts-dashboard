@@ -36,16 +36,13 @@ const Bar = ({ pct: p, color = C.ink, delay = 0, striped }: { pct: number; color
   );
 };
 
-const KpiCard = ({ num, label, idx, pill, footnote, filled, pillDown }: { num: string | number; label: string; idx: string; pill: string; footnote: string; filled?: boolean; pillDown?: boolean }) => {
+const KpiCard = ({ num, label, pill, footnote, filled, pillDown }: { num: string | number; label: string; pill: string; footnote: string; filled?: boolean; pillDown?: boolean }) => {
   const bg = filled ? C.accent : C.surface;
   const fg = filled ? C.white : C.ink;
   const dim = filled ? "rgba(255,255,255,0.65)" : C.inkDim;
   return (
     <div style={{ flex: 1, minWidth: 170, background: bg, border: filled ? "none" : `1px solid ${C.hairline}`, borderRadius: 22, padding: "24px 28px", display: "flex", flexDirection: "column", gap: 6 }}>
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: dim, lineHeight: 1.3, whiteSpace: "pre-line" }}>{label}</span>
-        <span style={{ fontSize: 12, fontWeight: 600, color: dim }}>{idx}</span>
-      </div>
+      <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: dim, lineHeight: 1.3, whiteSpace: "pre-line" }}>{label}</span>
       <div style={{ fontFamily: serif, fontSize: 56, letterSpacing: "-0.045em", color: fg, lineHeight: 1, marginTop: 4 }}>{num}</div>
       <div style={{ marginTop: 4 }}><Pill inv={filled} down={pillDown}>{pill}</Pill></div>
       <div style={{ fontSize: 12, color: dim, marginTop: 2 }}>{footnote}</div>
@@ -133,9 +130,9 @@ export default function Dashboard({ data }: { data: SheetData }) {
       } />
 
       <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
-        <KpiCard num={fmt(curViews)} label={"TOTAL\nVIEWS"} idx="01" pill={`${pct(curViews, prevViews)} vs prev month`} footnote={`Prev: ${fmt(prevViews)} · ${win.cur.length} posts this month`} pillDown={isVDown} />
-        <KpiCard num={curInt} label={"TOTAL\nINTERACTIONS"} idx="02" pill={`${pct(curInt, prevInt)} vs prev month`} footnote={`Prev: ${prevInt} · Likes + comments + saves + shares`} pillDown={isIDown} />
-        <KpiCard num={`${curEng.toFixed(1)}%`} label={"ENGAGEMENT\nRATE"} idx="03" pill={`${pct(curEng, prevEng)} vs prev month`} footnote={`Prev: ${prevEng.toFixed(1)}% · Interactions / views`} pillDown={isEDown} />
+        <KpiCard num={fmt(curViews)} label={"TOTAL\nVIEWS"} pill={`${pct(curViews, prevViews)} vs prev month`} footnote={`Prev: ${fmt(prevViews)} · ${win.cur.length} posts this month`} pillDown={isVDown} />
+        <KpiCard num={curInt} label={"TOTAL\nINTERACTIONS"} pill={`${pct(curInt, prevInt)} vs prev month`} footnote={`Prev: ${prevInt} · Likes + comments + saves + shares`} pillDown={isIDown} />
+        <KpiCard num={`${curEng.toFixed(1)}%`} label={"ENGAGEMENT\nRATE"} pill={`${pct(curEng, prevEng)} vs prev month`} footnote={`Prev: ${prevEng.toFixed(1)}% · Interactions / views`} pillDown={isEDown} />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
@@ -196,11 +193,11 @@ export default function Dashboard({ data }: { data: SheetData }) {
       } />
 
       <div style={{ display: "flex", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
-        <KpiCard num={sales.totalLeads} label={"NEW\nLEADS"} idx="01" pill={isFirstMonth ? "First month" : "vs prev month"} footnote={isFirstMonth ? "No prior data yet" : "All channels"} />
-        <KpiCard num={sales.bookedCalls} label={"CALLS\nBOOKED"} idx="02" pill={isFirstMonth ? "First month" : "vs prev month"} footnote={isFirstMonth ? "No prior data — CRM started" : "Discovery/strategy"} />
-        <KpiCard num={sales.signedClients} label={"NEW\nCLIENTS"} idx="03" pill={isFirstMonth ? "First month" : "vs prev month"} footnote={isFirstMonth ? "First sales month" : "Signed & onboarded"} />
-        <KpiCard num={totalPaid > 0 ? `£${totalPaid.toLocaleString()}` : "£0"} label={"CASH\nCOLLECTED"} idx="04" pill={isFirstMonth ? "First month" : "vs prev month"} footnote={totalOutstanding > 0 ? `£${totalOutstanding.toLocaleString()} outstanding` : "Stripe pending"} />
-        <KpiCard num={totalPaid > 0 ? `£${totalPaid.toLocaleString()}` : "£0"} label={"SALES"} idx="05" pill={isFirstMonth ? "First month" : "vs prev month"} footnote={"Stripe not yet connected"} filled />
+        <KpiCard num={sales.totalLeads} label={"NEW\nLEADS"} pill={isFirstMonth ? "First month" : "vs prev month"} footnote={isFirstMonth ? "No prior data yet" : "All channels"} />
+        <KpiCard num={sales.bookedCalls} label={"CALLS\nBOOKED"} pill={isFirstMonth ? "First month" : "vs prev month"} footnote={isFirstMonth ? "No prior data — CRM started" : "Discovery/strategy"} />
+        <KpiCard num={sales.signedClients} label={"NEW\nCLIENTS"} pill={isFirstMonth ? "First month" : "vs prev month"} footnote={isFirstMonth ? "First sales month" : "Signed & onboarded"} />
+        <KpiCard num={totalPaid > 0 ? `£${totalPaid.toLocaleString()}` : "£0"} label={"CASH\nCOLLECTED"} pill={isFirstMonth ? "First month" : "vs prev month"} footnote={totalOutstanding > 0 ? `£${totalOutstanding.toLocaleString()} outstanding` : "Stripe pending"} />
+        <KpiCard num={totalPaid > 0 ? `£${totalPaid.toLocaleString()}` : "£0"} label={"SALES"} pill={isFirstMonth ? "First month" : "vs prev month"} footnote={"Stripe not yet connected"} filled />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 16 }}>
@@ -235,23 +232,27 @@ export default function Dashboard({ data }: { data: SheetData }) {
               <div style={{ display: "grid", gridTemplateColumns: "32px 1fr 56px 56px", gap: 8, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", color: C.inkDim, paddingBottom: 8, borderBottom: `1px solid ${C.hairline}` }}>
                 <span>#</span><span>SOURCE</span><span style={{ textAlign: "right" }}>LEADS</span><span style={{ textAlign: "right" }}>CLICKS</span>
               </div>
-              {leadSources.map((src, i) => (
-                <div key={i} style={{ display: "grid", gridTemplateColumns: "32px 1fr 56px 56px", gap: 8, alignItems: "center", padding: "12px 0", borderBottom: i < leadSources.length - 1 ? `1px solid ${C.hairline}` : "none" }}>
-                  <span style={{ fontFamily: serif, fontSize: 18, color: C.inkDim }}>{String(i + 1).padStart(2, "0")}</span>
-                  <div style={{ overflow: "hidden" }}>
-                    <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", color: C.accent }}>
-                      {src.matchedPost ? `${src.matchedPost.type === "REELS" ? "REEL" : "CAROUSEL"} · ${fmtShortDate(src.matchedPost.date)}` : "MANYCHAT"}
+              {leadSources.map((src, i) => {
+                const link = src.matchedPost?.permalink;
+                const RowEl: any = link ? "a" : "div";
+                return (
+                  <RowEl
+                    key={i}
+                    {...(link ? { href: link, target: "_blank", rel: "noopener noreferrer" } : {})}
+                    style={{ display: "grid", gridTemplateColumns: "32px 1fr 56px 56px", gap: 8, alignItems: "center", padding: "12px 0", borderBottom: i < leadSources.length - 1 ? `1px solid ${C.hairline}` : "none", textDecoration: "none", color: "inherit", cursor: link ? "pointer" : "default" }}
+                  >
+                    <span style={{ fontFamily: serif, fontSize: 18, color: C.inkDim }}>{String(i + 1).padStart(2, "0")}</span>
+                    <div style={{ overflow: "hidden" }}>
+                      <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", color: C.accent }}>
+                        {src.matchedPost ? `${src.matchedPost.type === "REELS" ? "REEL" : "CAROUSEL"} · ${fmtShortDate(src.matchedPost.date)}` : "MANYCHAT"}
+                      </div>
+                      <div style={{ fontSize: 12, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{src.source}</div>
                     </div>
-                    <div style={{ fontSize: 12, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{src.source}</div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontFamily: serif, fontSize: 22 }}>{src.count}</div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontFamily: serif, fontSize: 22, color: src.clicks > 0 ? C.accent : C.inkDim }}>{src.clicks}</div>
-                  </div>
-                </div>
-              ))}
+                    <div style={{ fontFamily: serif, fontSize: 22, textAlign: "right" }}>{src.count}</div>
+                    <div style={{ fontFamily: serif, fontSize: 22, color: src.clicks > 0 ? C.accent : C.inkDim, textAlign: "right" }}>{src.clicks}</div>
+                  </RowEl>
+                );
+              })}
             </>
           )}
         </Panel>
