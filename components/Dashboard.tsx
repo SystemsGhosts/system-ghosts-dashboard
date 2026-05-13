@@ -75,30 +75,22 @@ const Header = ({ w1, w2, right }: { w1: string; w2: string; right: React.ReactN
 const PostRow = ({ post, rank, showBorder }: { post: IgPost; rank: number; showBorder: boolean }) => {
   const cap = post.shortCaption.length > 42 ? post.shortCaption.slice(0, 42) + "..." : post.shortCaption;
   const eng = post.views > 0 ? ((post.interactions / post.views) * 100).toFixed(1) : "—";
+  const RowEl: any = post.permalink ? "a" : "div";
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "32px 1fr 72px 72px 64px 64px", gap: 8, alignItems: "center", padding: "12px 0", borderBottom: showBorder ? `1px solid ${C.hairline}` : "none" }}>
+    <RowEl
+      {...(post.permalink ? { href: post.permalink, target: "_blank", rel: "noopener noreferrer" } : {})}
+      style={{ display: "grid", gridTemplateColumns: "32px 1fr 72px 72px 64px 64px", gap: 8, alignItems: "center", padding: "12px 0", borderBottom: showBorder ? `1px solid ${C.hairline}` : "none", textDecoration: "none", color: "inherit", cursor: post.permalink ? "pointer" : "default" }}
+    >
       <span style={{ fontFamily: serif, fontSize: 18, color: C.inkDim }}>{String(rank).padStart(2, "0")}</span>
       <div style={{ overflow: "hidden" }}>
         <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", color: C.accent }}>{post.type === "REELS" ? "REEL" : "CAROUSEL"}</div>
         <div style={{ fontSize: 12, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{cap}</div>
       </div>
-      <div style={{ textAlign: "right" }}>
-        <div style={{ fontFamily: serif, fontSize: 14 }}>{fmtShortDate(post.date)}</div>
-        <div style={{ fontSize: 9, color: C.inkDim }}>DATE</div>
-      </div>
-      <div style={{ textAlign: "right" }}>
-        <div style={{ fontFamily: serif, fontSize: 17 }}>{fmt(post.views)}</div>
-        <div style={{ fontSize: 9, color: C.inkDim }}>VIEWS</div>
-      </div>
-      <div style={{ textAlign: "right" }}>
-        <div style={{ fontFamily: serif, fontSize: 17 }}>{post.interactions}</div>
-        <div style={{ fontSize: 9, color: C.inkDim }}>INT.</div>
-      </div>
-      <div style={{ textAlign: "right" }}>
-        <div style={{ fontFamily: serif, fontSize: 17 }}>{eng}%</div>
-        <div style={{ fontSize: 9, color: C.inkDim }}>ENG.</div>
-      </div>
-    </div>
+      <div style={{ fontFamily: serif, fontSize: 17, textAlign: "right" }}>{fmtShortDate(post.date)}</div>
+      <div style={{ fontFamily: serif, fontSize: 17, textAlign: "right" }}>{fmt(post.views)}</div>
+      <div style={{ fontFamily: serif, fontSize: 17, textAlign: "right" }}>{post.interactions}</div>
+      <div style={{ fontFamily: serif, fontSize: 17, textAlign: "right" }}>{eng}%</div>
+    </RowEl>
   );
 };
 
@@ -207,8 +199,8 @@ export default function Dashboard({ data }: { data: SheetData }) {
         <KpiCard num={sales.totalLeads} label={"NEW\nLEADS"} idx="01" pill={isFirstMonth ? "First month" : "vs prev month"} footnote={isFirstMonth ? "No prior data yet" : "All channels"} />
         <KpiCard num={sales.bookedCalls} label={"CALLS\nBOOKED"} idx="02" pill={isFirstMonth ? "First month" : "vs prev month"} footnote={isFirstMonth ? "No prior data — CRM started" : "Discovery/strategy"} />
         <KpiCard num={sales.signedClients} label={"NEW\nCLIENTS"} idx="03" pill={isFirstMonth ? "First month" : "vs prev month"} footnote={isFirstMonth ? "First sales month" : "Signed & onboarded"} />
-        <KpiCard num={totalPaid > 0 ? `£${totalPaid.toLocaleString()}` : "£0"} label={"SALES"} idx="04" pill={isFirstMonth ? "First month" : "vs prev month"} footnote={"Stripe not yet connected"} filled />
-        <KpiCard num={totalPaid > 0 ? `£${totalPaid.toLocaleString()}` : "£0"} label={"CASH\nCOLLECTED"} idx="05" pill={isFirstMonth ? "First month" : "vs prev month"} footnote={totalOutstanding > 0 ? `£${totalOutstanding.toLocaleString()} outstanding` : "Stripe pending"} />
+        <KpiCard num={totalPaid > 0 ? `£${totalPaid.toLocaleString()}` : "£0"} label={"CASH\nCOLLECTED"} idx="04" pill={isFirstMonth ? "First month" : "vs prev month"} footnote={totalOutstanding > 0 ? `£${totalOutstanding.toLocaleString()} outstanding` : "Stripe pending"} />
+        <KpiCard num={totalPaid > 0 ? `£${totalPaid.toLocaleString()}` : "£0"} label={"SALES"} idx="05" pill={isFirstMonth ? "First month" : "vs prev month"} footnote={"Stripe not yet connected"} filled />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 16 }}>
@@ -266,7 +258,7 @@ export default function Dashboard({ data }: { data: SheetData }) {
       </div>
 
       <div style={{ textAlign: "center", marginTop: 48, paddingTop: 24, borderTop: `1px solid ${C.hairline}`, fontSize: 11, color: C.inkDim, letterSpacing: "0.1em" }}>
-        SYSTEM GHOSTS · SALES & SOCIAL PULSE · LAST REFRESHED {new Date(fetchedAt).toLocaleString("en-GB")}
+        SYSTEM GHOSTS · LAST REFRESHED {new Date(fetchedAt).toLocaleString("en-GB")}
       </div>
     </div>
   );
