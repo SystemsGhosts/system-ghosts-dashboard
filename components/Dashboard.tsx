@@ -10,10 +10,12 @@ import {
   fmtShortDate,
   comparisonWindows,
   sum,
-  lastSevenPostsBars,
   topAndBottomPosts,
   salesMetrics,
   topLeadSources,
+  weekdayPostingStreak,
+  pipelineTouchStreak,
+  type StreakInfo,
 } from "@/lib/derive";
 
 const Pill = ({ children, inv = false, down = false }: { children: React.ReactNode; inv?: boolean; down?: boolean }) => (
@@ -91,6 +93,35 @@ const PostRow = ({ post, rank, showBorder }: { post: IgPost; rank: number; showB
   );
 };
 
+const StreakRow = ({ title, sub, streak, unitSingular = "day", unitPlural = "days" }: { title: string; sub: string; streak: StreakInfo; unitSingular?: string; unitPlural?: string }) => (
+  <div style={{ display: "flex", alignItems: "center", gap: 24, padding: "20px 0", borderBottom: `1px solid ${C.hairline}` }}>
+    <div style={{ flex: "0 0 220px" }}>
+      <div style={{ fontWeight: 700, fontSize: 14 }}>{title}</div>
+      <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", color: C.inkDim, marginTop: 2 }}>{sub}</div>
+    </div>
+    <div style={{ flex: "0 0 auto", display: "flex", alignItems: "baseline", gap: 8 }}>
+      <span style={{ fontFamily: serif, fontSize: 56, lineHeight: 1, letterSpacing: "-0.04em" }}>{streak.current}</span>
+      <span style={{ fontSize: 13, color: C.inkDim }}>{streak.current === 1 ? unitSingular : unitPlural}</span>
+    </div>
+    <div style={{ flex: "0 0 auto", fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", color: C.inkDim, paddingLeft: 16, borderLeft: `1px solid ${C.hairline}` }}>
+      BEST<br /><span style={{ fontFamily: serif, fontSize: 22, color: C.ink, letterSpacing: 0 }}>{streak.best}</span>
+    </div>
+    <div style={{ flex: 1 }} />
+    <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}>
+      <div style={{ display: "flex", gap: 4 }}>
+        {streak.lastDays.map((d, i) => (
+          <div key={i} title={d.label} style={{ width: 14, height: 14, borderRadius: 3, background: d.active ? C.accent : C.surface2, border: d.active ? "none" : `1px solid ${C.hairline}` }} />
+        ))}
+      </div>
+      <div style={{ display: "flex", gap: 4 }}>
+        {streak.lastDays.map((d, i) => (
+          <div key={i} style={{ width: 14, fontSize: 8, fontWeight: 600, letterSpacing: "0.05em", color: C.inkDim, textAlign: "center" }}>{d.label}</div>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
 export default function Dashboard({ data }: { data: SheetData }) {
   const { igPosts, crmLeads, manychatLeads, fetchedAt } = data;
 
@@ -107,7 +138,8 @@ export default function Dashboard({ data }: { data: SheetData }) {
   const isEDown = curEng < prevEng;
 
   const { top, bottom, totalRanked } = topAndBottomPosts(igPosts);
-  const { bars, total: weekTotal, max: weekMax } = lastSevenPostsBars(igPosts);
+  const postingStreak = weekdayPostingStreak(igPosts);
+  const pipelineStreak = pipelineTouchStreak(crmLeads);
 
   const sales = salesMetrics(crmLeads, manychatLeads);
   const leadSources = topLeadSources(manychatLeads, igPosts, 5);
@@ -151,31 +183,28 @@ export default function Dashboard({ data }: { data: SheetData }) {
       </div>
 
       <div style={{ background: C.surface, border: `1px solid ${C.hairline}`, borderRadius: 28, padding: "32px 36px", marginBottom: 64 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
           <div>
-            <div style={{ fontFamily: serif, fontSize: 28 }}>RECENT ACTIVITY</div>
-            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", color: C.inkDim, marginTop: 4 }}>LAST 7 POSTS BY INTERACTIONS</div>
+            <div style={{ fontFamily: serif, fontSize: 28 }}>STREAKS</div>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", color: C.inkDim, marginTop: 4 }}>INPUT DISCIPLINE · DAILY</div>
           </div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-            <span style={{ fontFamily: serif, fontSize: 42 }}>{weekTotal}</span>
-            <span style={{ fontSize: 13, color: C.inkDim }}>interactions</span>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", color: C.inkDim, textAlign: "right", maxWidth: 240 }}>
+            BLUE = ACTIVE DAY<br />
+            <span style={{ fontWeight: 400, letterSpacing: 0, fontSize: 10 }}>Last 14 tracked days, oldest to today</span>
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 80, marginTop: 20, marginBottom: 8 }}>
-          {bars.map((bar, i) => {
-            const h = weekMax > 0 ? (bar.value / weekMax) * 100 : 0;
-            const isMax = bar.value === weekMax && bar.value > 0;
-            return (
-              <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: C.ink, marginBottom: 4 }}>{bar.value}</div>
-                <div style={{ width: "100%", height: h, minHeight: 4, background: isMax ? C.accent : C.ink, borderRadius: 6, transition: "height 700ms cubic-bezier(.4,0,.2,1)" }} />
-              </div>
-            );
-          })}
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          {bars.map((bar, i) => <div key={i} style={{ flex: 1, textAlign: "center", fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", color: C.inkDim }}>{bar.label}</div>)}
-        </div>
+        <StreakRow
+          title="Posting Streak"
+          sub="MON–FRI · ≥1 INSTAGRAM POST"
+          streak={postingStreak}
+          unitSingular="weekday"
+          unitPlural="weekdays"
+        />
+        <StreakRow
+          title="Pipeline Streak"
+          sub="DAILY · ANY CRM ACTIVITY"
+          streak={pipelineStreak}
+        />
       </div>
 
       <Header w1="SALES" w2="PULSE" right={

@@ -124,6 +124,99 @@ export function topLeadSources(manychat: ManychatLead[], posts: IgPost[], limit 
   return sources.sort((a, b) => b.count - a.count).slice(0, limit);
 }
 
+export type StreakInfo = {
+  current: number;
+  best: number;
+  lastDays: { label: string; active: boolean }[];
+};
+
+const ONE_DAY = 86400000;
+
+function ymd(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function isWeekday(d: Date): boolean {
+  const dow = d.getDay();
+  return dow >= 1 && dow <= 5;
+}
+
+function previousDay(d: Date, weekdaysOnly: boolean): Date {
+  const next = new Date(d.getTime() - ONE_DAY);
+  if (!weekdaysOnly) return next;
+  while (!isWeekday(next)) next.setTime(next.getTime() - ONE_DAY);
+  return next;
+}
+
+function startOfToday(today: Date): Date {
+  return new Date(today.getFullYear(), today.getMonth(), today.getDate());
+}
+
+function computeStreak(activeDates: Set<string>, today: Date, weekdaysOnly: boolean, windowSize = 14): StreakInfo {
+  const start = startOfToday(today);
+  // find anchor day: today if it has activity, else most recent prior day
+  let anchor = new Date(start);
+  if (weekdaysOnly && !isWeekday(anchor)) anchor = previousDay(anchor, true);
+  if (!activeDates.has(ymd(anchor))) {
+    // give today/anchor a grace by walking back one to start counting
+    anchor = previousDay(anchor, weekdaysOnly);
+  }
+
+  let current = 0;
+  let cursor = new Date(anchor);
+  while (activeDates.has(ymd(cursor))) {
+    current += 1;
+    cursor = previousDay(cursor, weekdaysOnly);
+  }
+
+  // best streak across all known dates
+  const sorted = [...activeDates].sort();
+  let best = 0;
+  let run = 0;
+  let prev: Date | null = null;
+  for (const dateStr of sorted) {
+    const d = new Date(dateStr + "T12:00:00");
+    if (weekdaysOnly && !isWeekday(d)) continue;
+    if (prev) {
+      const expected = previousDay(d, weekdaysOnly);
+      if (ymd(expected) !== ymd(prev)) {
+        run = 0;
+      }
+    }
+    run += 1;
+    if (run > best) best = run;
+    prev = d;
+  }
+  best = Math.max(best, current);
+
+  // last N days for the dot strip
+  const lastDays: { label: string; active: boolean }[] = [];
+  let walker = new Date(start);
+  if (weekdaysOnly && !isWeekday(walker)) walker = previousDay(walker, true);
+  for (let i = 0; i < windowSize; i++) {
+    const dow = walker.getDay();
+    const label = ["S", "M", "T", "W", "T", "F", "S"][dow];
+    lastDays.unshift({ label, active: activeDates.has(ymd(walker)) });
+    walker = previousDay(walker, weekdaysOnly);
+  }
+
+  return { current, best, lastDays };
+}
+
+export function weekdayPostingStreak(posts: IgPost[], today: Date = new Date()): StreakInfo {
+  const dates = new Set(posts.map((p) => p.date).filter(Boolean));
+  return computeStreak(dates, today, true);
+}
+
+export function pipelineTouchStreak(crm: CrmLead[], today: Date = new Date()): StreakInfo {
+  const dates = new Set<string>();
+  for (const l of crm) {
+    if (l.callDate) dates.add(l.callDate);
+  }
+  return computeStreak(dates, today, false);
+}
+
 export function salesMetrics(crm: CrmLead[], manychat: ManychatLead[]): SalesMetrics {
   return {
     totalLeads: manychat.length,
