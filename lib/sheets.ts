@@ -30,6 +30,7 @@ export type IgPost = {
   views: number;
   reach: number;
   interactions: number;
+  follows: number;
   permalink: string;
 };
 
@@ -104,12 +105,11 @@ function findHeaderRow(rows: string[][], required: string[]): number {
   return 0;
 }
 
-export async function fetchInstagramPosts(): Promise<IgPost[]> {
-  const tabs = await getTabNames(SOCIAL_SHEET_ID);
-  const igTab = tabs.find((t) => /instagram/i.test(t)) || "Instagram - Metrics";
-  const rows = await getRows(SOCIAL_SHEET_ID, igTab);
+async function readPostsFromTab(tab: string): Promise<IgPost[]> {
+  const rows = await getRows(SOCIAL_SHEET_ID, tab);
   if (rows.length < 2) return [];
   const headerRow = findHeaderRow(rows, ["Caption", "Total Interactions"]);
+  if (!rows[headerRow].some((c) => /caption/i.test(c))) return [];
   const idx = indexHeaders(rows[headerRow]);
   const col = (r: string[], name: string) => r[idx[name.toLowerCase()]] ?? "";
   return rows.slice(headerRow + 1)
@@ -131,9 +131,30 @@ export async function fetchInstagramPosts(): Promise<IgPost[]> {
         views: n(col(r, "Views")),
         reach: n(col(r, "Reach")),
         interactions: n(col(r, "Total Interactions")),
+        follows: n(col(r, "Follows")),
         permalink: s(col(r, "Permalink")),
       };
     });
+}
+
+export async function fetchInstagramPosts(): Promise<IgPost[]> {
+  // Read every tab in the workbook that looks like an Instagram post log
+  // (contains a Caption header) and merge by permalink, preferring the
+  // freshest row (higher views/interactions = more recently synced).
+  const tabs = await getTabNames(SOCIAL_SHEET_ID);
+  const candidateTabs = tabs.filter((t) => !/^(youtube|notion|tracker|performance|reach|followers? count)/i.test(t));
+  const tabPosts = await Promise.all(candidateTabs.map((t) => readPostsFromTab(t).catch(() => [])));
+  const byKey = new Map<string, IgPost>();
+  for (const list of tabPosts) {
+    for (const post of list) {
+      const key = post.permalink || post.caption.slice(0, 80);
+      const existing = byKey.get(key);
+      if (!existing || post.interactions > existing.interactions || post.views > existing.views) {
+        byKey.set(key, post);
+      }
+    }
+  }
+  return [...byKey.values()];
 }
 
 export async function fetchCrmLeads(): Promise<CrmLead[]> {

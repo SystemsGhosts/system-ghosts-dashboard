@@ -78,17 +78,18 @@ const PostRow = ({ post, rank, showBorder }: { post: IgPost; rank: number; showB
   return (
     <RowEl
       {...(post.permalink ? { href: post.permalink, target: "_blank", rel: "noopener noreferrer" } : {})}
-      style={{ display: "grid", gridTemplateColumns: "32px 1fr 72px 72px 64px 64px", gap: 8, alignItems: "center", padding: "12px 0", borderBottom: showBorder ? `1px solid ${C.hairline}` : "none", textDecoration: "none", color: "inherit", cursor: post.permalink ? "pointer" : "default" }}
+      style={{ display: "grid", gridTemplateColumns: "28px 1fr 56px 56px 52px 52px 52px", gap: 6, alignItems: "center", padding: "12px 0", borderBottom: showBorder ? `1px solid ${C.hairline}` : "none", textDecoration: "none", color: "inherit", cursor: post.permalink ? "pointer" : "default" }}
     >
       <span style={{ fontFamily: serif, fontSize: 18, color: C.inkDim }}>{String(rank).padStart(2, "0")}</span>
       <div style={{ overflow: "hidden" }}>
         <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", color: C.accent }}>{post.type === "REELS" ? "REEL" : "CAROUSEL"}</div>
         <div style={{ fontSize: 12, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{cap}</div>
       </div>
-      <div style={{ fontFamily: serif, fontSize: 17, textAlign: "right" }}>{fmtShortDate(post.date)}</div>
-      <div style={{ fontFamily: serif, fontSize: 17, textAlign: "right" }}>{fmt(post.views)}</div>
-      <div style={{ fontFamily: serif, fontSize: 17, textAlign: "right" }}>{post.interactions}</div>
-      <div style={{ fontFamily: serif, fontSize: 17, textAlign: "right" }}>{eng}%</div>
+      <div style={{ fontFamily: serif, fontSize: 16, textAlign: "right" }}>{fmtShortDate(post.date)}</div>
+      <div style={{ fontFamily: serif, fontSize: 16, textAlign: "right" }}>{fmt(post.views)}</div>
+      <div style={{ fontFamily: serif, fontSize: 16, textAlign: "right" }}>{post.interactions}</div>
+      <div style={{ fontFamily: serif, fontSize: 16, textAlign: "right", color: post.follows > 0 ? C.accent : C.inkDim }}>{post.follows || "—"}</div>
+      <div style={{ fontFamily: serif, fontSize: 16, textAlign: "right" }}>{eng}%</div>
     </RowEl>
   );
 };
@@ -152,7 +153,7 @@ export default function Dashboard({ data }: { data: SheetData }) {
   return (
     <div style={{ background: C.bg, minHeight: "100vh", fontFamily: sans, color: C.ink, padding: "40px 48px", maxWidth: 1640, margin: "0 auto" }}>
 
-      <Header w1="SOCIAL" w2="PULSE" right={
+      <Header w1="SOCIAL MEDIA" w2="INSIGHTS" right={
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <span style={{ padding: "6px 16px", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", background: C.ink, color: C.white, borderRadius: 999 }}>
             {win.monthName} 1–{win.dayOfMonth} vs PREV
@@ -169,14 +170,14 @@ export default function Dashboard({ data }: { data: SheetData }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
         <Panel title="TOP 4 POSTS" sub="RANKED BY TOTAL INTERACTIONS">
-          <div style={{ display: "grid", gridTemplateColumns: "32px 1fr 72px 72px 64px 64px", gap: 8, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", color: C.inkDim, paddingBottom: 8, borderBottom: `1px solid ${C.hairline}` }}>
-            <span>#</span><span>POST</span><span style={{ textAlign: "right" }}>DATE</span><span style={{ textAlign: "right" }}>VIEWS</span><span style={{ textAlign: "right" }}>INT.</span><span style={{ textAlign: "right" }}>ENG.</span>
+          <div style={{ display: "grid", gridTemplateColumns: "28px 1fr 56px 56px 52px 52px 52px", gap: 6, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", color: C.inkDim, paddingBottom: 8, borderBottom: `1px solid ${C.hairline}` }}>
+            <span>#</span><span>POST</span><span style={{ textAlign: "right" }}>DATE</span><span style={{ textAlign: "right" }}>VIEWS</span><span style={{ textAlign: "right" }}>INT.</span><span style={{ textAlign: "right" }}>FOLL.</span><span style={{ textAlign: "right" }}>ENG.</span>
           </div>
           {top.map((p, i) => <PostRow key={i} post={p} rank={i + 1} showBorder={i < top.length - 1} />)}
         </Panel>
         <Panel title="BOTTOM 4 POSTS" sub="LOWEST BY TOTAL INTERACTIONS">
-          <div style={{ display: "grid", gridTemplateColumns: "32px 1fr 72px 72px 64px 64px", gap: 8, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", color: C.inkDim, paddingBottom: 8, borderBottom: `1px solid ${C.hairline}` }}>
-            <span>#</span><span>POST</span><span style={{ textAlign: "right" }}>DATE</span><span style={{ textAlign: "right" }}>VIEWS</span><span style={{ textAlign: "right" }}>INT.</span><span style={{ textAlign: "right" }}>ENG.</span>
+          <div style={{ display: "grid", gridTemplateColumns: "28px 1fr 56px 56px 52px 52px 52px", gap: 6, fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", color: C.inkDim, paddingBottom: 8, borderBottom: `1px solid ${C.hairline}` }}>
+            <span>#</span><span>POST</span><span style={{ textAlign: "right" }}>DATE</span><span style={{ textAlign: "right" }}>VIEWS</span><span style={{ textAlign: "right" }}>INT.</span><span style={{ textAlign: "right" }}>FOLL.</span><span style={{ textAlign: "right" }}>ENG.</span>
           </div>
           {bottom.map((p, i) => <PostRow key={i} post={p} rank={totalRanked - bottom.length + i + 1} showBorder={i < bottom.length - 1} />)}
         </Panel>
@@ -207,7 +208,7 @@ export default function Dashboard({ data }: { data: SheetData }) {
         />
       </div>
 
-      <Header w1="SALES" w2="PULSE" right={
+      <Header w1="SALES" w2="INSIGHTS" right={
         <div style={{ textAlign: "right" }}>
           <div style={{ fontFamily: serif, fontSize: 22 }}>{win.monthName} {win.year}</div>
           <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", color: C.inkDim }}>DAY {win.dayOfMonth} OF {win.daysInMonth}</div>
