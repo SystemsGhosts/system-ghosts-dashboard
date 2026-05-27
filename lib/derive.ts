@@ -1,4 +1,4 @@
-import type { CrmLead, IgPost, ManychatLead } from "./sheets";
+import type { CrmLead, IgPost, ManychatLead, FollowerSnapshot, DailyFollows } from "./sheets";
 
 export const C = {
   bg: "oklch(0.965 0.012 85)",
@@ -215,6 +215,88 @@ export function pipelineTouchStreak(crm: CrmLead[], today: Date = new Date()): S
     if (l.callDate) dates.add(l.callDate);
   }
   return computeStreak(dates, today, false);
+}
+
+export type FollowerMetric = {
+  source: "snapshots" | "gross" | "none";
+  curValue: number;
+  prevValue: number;
+  curLabel: string;
+  prevLabel: string;
+  footnote: string;
+};
+
+function sumFollowsBetween(daily: DailyFollows[], start: string, end: string): number {
+  return daily.filter((d) => d.date >= start && d.date <= end).reduce((s, d) => s + d.follows, 0);
+}
+
+function snapshotAtOrBefore(snapshots: FollowerSnapshot[], date: string): FollowerSnapshot | undefined {
+  // snapshots are sorted asc by date
+  let result: FollowerSnapshot | undefined;
+  for (const s of snapshots) {
+    if (s.date <= date) result = s;
+    else break;
+  }
+  return result;
+}
+function snapshotAtOrAfter(snapshots: FollowerSnapshot[], date: string): FollowerSnapshot | undefined {
+  for (const s of snapshots) {
+    if (s.date >= date) return s;
+  }
+  return undefined;
+}
+
+export function followerMetric(
+  snapshots: FollowerSnapshot[],
+  daily: DailyFollows[],
+  currentFollowers: number | null,
+  now: Date = new Date(),
+): FollowerMetric {
+  const win = comparisonWindows([] as IgPost[], now);
+  const totalLabel = currentFollowers ? `Total: ${currentFollowers.toLocaleString()} followers` : "Total follower count not available";
+
+  // Net change via snapshots — need a snapshot on/before curRange.start AND on/before curRange.end
+  if (snapshots.length >= 2) {
+    const curStartSnap = snapshotAtOrBefore(snapshots, win.curRange.start) ?? snapshotAtOrAfter(snapshots, win.curRange.start);
+    const curEndSnap = snapshotAtOrBefore(snapshots, win.curRange.end);
+    if (curStartSnap && curEndSnap && curEndSnap.date !== curStartSnap.date) {
+      const cur = curEndSnap.followers - curStartSnap.followers;
+      const prevStartSnap = snapshotAtOrBefore(snapshots, win.prevRange.start);
+      const prevEndSnap = snapshotAtOrBefore(snapshots, win.prevRange.end);
+      const prev = prevStartSnap && prevEndSnap ? prevEndSnap.followers - prevStartSnap.followers : 0;
+      return {
+        source: "snapshots",
+        curValue: cur,
+        prevValue: prev,
+        curLabel: `${cur >= 0 ? "+" : ""}${cur}`,
+        prevLabel: prevStartSnap && prevEndSnap ? `${prev >= 0 ? "+" : ""}${prev}` : "—",
+        footnote: totalLabel,
+      };
+    }
+  }
+
+  // Fallback: gross daily follows from Page Engagement tab
+  if (daily.length > 0) {
+    const cur = sumFollowsBetween(daily, win.curRange.start, win.curRange.end);
+    const prev = sumFollowsBetween(daily, win.prevRange.start, win.prevRange.end);
+    return {
+      source: "gross",
+      curValue: cur,
+      prevValue: prev,
+      curLabel: `+${cur}`,
+      prevLabel: `+${prev}`,
+      footnote: `Gross follows (no unfollows tracked). ${totalLabel}`,
+    };
+  }
+
+  return {
+    source: "none",
+    curValue: 0,
+    prevValue: 0,
+    curLabel: "—",
+    prevLabel: "—",
+    footnote: totalLabel,
+  };
 }
 
 export function salesMetrics(crm: CrmLead[], manychat: ManychatLead[]): SalesMetrics {

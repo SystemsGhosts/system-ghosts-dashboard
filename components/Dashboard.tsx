@@ -15,6 +15,7 @@ import {
   topLeadSources,
   weekdayPostingStreak,
   pipelineTouchStreak,
+  followerMetric,
   type StreakInfo,
 } from "@/lib/derive";
 
@@ -124,7 +125,7 @@ const StreakRow = ({ title, sub, streak, unitSingular = "day", unitPlural = "day
 );
 
 export default function Dashboard({ data }: { data: SheetData }) {
-  const { igPosts, crmLeads, manychatLeads, fetchedAt } = data;
+  const { igPosts, crmLeads, manychatLeads, followerSnapshots, dailyFollows, currentFollowers, fetchedAt } = data;
 
   const win = comparisonWindows(igPosts);
   const curViews = sum(win.cur, "views");
@@ -141,6 +142,8 @@ export default function Dashboard({ data }: { data: SheetData }) {
   const { top, bottom, totalRanked } = topAndBottomPosts(igPosts);
   const postingStreak = weekdayPostingStreak(igPosts);
   const pipelineStreak = pipelineTouchStreak(crmLeads);
+  const followers = followerMetric(followerSnapshots, dailyFollows, currentFollowers);
+  const isFDown = followers.curValue < followers.prevValue;
 
   const sales = salesMetrics(crmLeads, manychatLeads);
   const leadSources = topLeadSources(manychatLeads, igPosts, 5);
@@ -166,6 +169,19 @@ export default function Dashboard({ data }: { data: SheetData }) {
         <KpiCard num={fmt(curViews)} label={"TOTAL\nVIEWS"} pill={`${pct(curViews, prevViews)} vs prev month`} footnote={`Prev: ${fmt(prevViews)} · ${win.cur.length} posts this month`} pillDown={isVDown} />
         <KpiCard num={curInt} label={"TOTAL\nINTERACTIONS"} pill={`${pct(curInt, prevInt)} vs prev month`} footnote={`Prev: ${prevInt} · Likes + comments + saves + shares`} pillDown={isIDown} />
         <KpiCard num={`${curEng.toFixed(1)}%`} label={"ENGAGEMENT\nRATE"} pill={`${pct(curEng, prevEng)} vs prev month`} footnote={`Prev: ${prevEng.toFixed(1)}% · Interactions / views`} pillDown={isEDown} />
+        <KpiCard
+          num={followers.curLabel}
+          label={"FOLLOWERS\nGAINED"}
+          pill={
+            followers.source === "snapshots"
+              ? `vs ${followers.prevLabel} prev month`
+              : followers.source === "gross"
+              ? `vs ${followers.prevLabel} prev month`
+              : "Awaiting data"
+          }
+          footnote={followers.footnote}
+          pillDown={isFDown && followers.source !== "none"}
+        />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>

@@ -209,18 +209,75 @@ export async function fetchManychatLeads(): Promise<ManychatLead[]> {
   return all;
 }
 
+export type FollowerSnapshot = { date: string; followers: number };
+export type DailyFollows = { date: string; follows: number };
+
 export type SheetData = {
   igPosts: IgPost[];
   crmLeads: CrmLead[];
   manychatLeads: ManychatLead[];
+  followerSnapshots: FollowerSnapshot[];
+  dailyFollows: DailyFollows[];
+  currentFollowers: number | null;
   fetchedAt: string;
 };
 
+export async function fetchFollowerSnapshots(): Promise<FollowerSnapshot[]> {
+  const tabs = await getTabNames(SOCIAL_SHEET_ID);
+  const tab = tabs.find((t) => /follower snapshots/i.test(t));
+  if (!tab) return [];
+  const rows = await getRows(SOCIAL_SHEET_ID, tab);
+  if (rows.length < 2) return [];
+  const headerRow = findHeaderRow(rows, ["Date", "Followers"]);
+  const idx = indexHeaders(rows[headerRow]);
+  const col = (r: string[], name: string) => r[idx[name.toLowerCase()]] ?? "";
+  return rows.slice(headerRow + 1)
+    .filter((r) => s(col(r, "Date")) && s(col(r, "Followers")))
+    .map((r) => ({ date: s(col(r, "Date")).slice(0, 10), followers: n(col(r, "Followers")) }))
+    .sort((a, b) => (a.date < b.date ? -1 : 1));
+}
+
+export async function fetchDailyFollows(): Promise<DailyFollows[]> {
+  const tabs = await getTabNames(SOCIAL_SHEET_ID);
+  const tab = tabs.find((t) => /page engagement/i.test(t));
+  if (!tab) return [];
+  const rows = await getRows(SOCIAL_SHEET_ID, tab);
+  if (rows.length < 2) return [];
+  const headerRow = findHeaderRow(rows, ["Date"]);
+  const idx = indexHeaders(rows[headerRow]);
+  const followsCol = idx["follower count"] ?? idx["follows"] ?? -1;
+  const dateCol = idx["date"] ?? -1;
+  if (dateCol < 0 || followsCol < 0) return [];
+  return rows.slice(headerRow + 1)
+    .filter((r) => s(r[dateCol]))
+    .map((r) => ({ date: s(r[dateCol]).slice(0, 10), follows: n(r[followsCol]) }))
+    .sort((a, b) => (a.date < b.date ? -1 : 1));
+}
+
+export async function fetchCurrentFollowers(): Promise<number | null> {
+  const tabs = await getTabNames(SOCIAL_SHEET_ID);
+  const tab = tabs.find((t) => /basic profile/i.test(t));
+  if (!tab) return null;
+  const rows = await getRows(SOCIAL_SHEET_ID, tab);
+  if (rows.length < 2) return null;
+  const headerRow = findHeaderRow(rows, ["Followers Count"]);
+  const idx = indexHeaders(rows[headerRow]);
+  const followersCol = idx["followers count"];
+  if (followersCol == null) return null;
+  const valueRow = rows[headerRow + 1];
+  if (!valueRow) return null;
+  const v = n(valueRow[followersCol]);
+  return v || null;
+}
+
 export async function fetchAll(): Promise<SheetData> {
-  const [igPosts, crmLeads, manychatLeads] = await Promise.all([
+  const [igPosts, crmLeads, manychatLeads, followerSnapshots, dailyFollows, currentFollowers] = await Promise.all([
     fetchInstagramPosts(),
     fetchCrmLeads(),
     fetchManychatLeads(),
+    fetchFollowerSnapshots(),
+    fetchDailyFollows(),
+    fetchCurrentFollowers(),
   ]);
-  return { igPosts, crmLeads, manychatLeads, fetchedAt: new Date().toISOString() };
+  return { igPosts, crmLeads, manychatLeads, followerSnapshots, dailyFollows, currentFollowers, fetchedAt: new Date().toISOString() };
 }
